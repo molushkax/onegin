@@ -84,8 +84,8 @@ int main () {
     print_results_of_sorting_in_file(file_info.index, file_info.number_of_strings, onegin_out, "Original Onegin:");
 
     free_alloc_plus_ptr (file_info.index, file_info.buffer, file_info.bytes_for_onegin, file_info.number_of_strings);
-    close (file_info.file_onegin);
-    fclose (onegin_out);
+    close(file_info.file_onegin);
+    fclose(onegin_out);
 
     printf("Check file onegin_out.txt\n\n");
     return 0;
@@ -136,10 +136,9 @@ int get_size_of_file (const char* onegin, size_t* bytes_for_onegin) {
 
 int read_file (int file_onegin, char** buffer, int bytes_for_onegin) {
 
-    ssize_t read_info = read (file_onegin, *buffer, (int)bytes_for_onegin);
+    ssize_t read_info = read(file_onegin, *buffer, (int)bytes_for_onegin);
     check_of_reading_file (file_onegin, read_info);
     (*buffer)[read_info] = '\0';
-
     return (int)read_info;
 }
 
@@ -173,8 +172,8 @@ int check_of_reading_file (const int file_onegin, const ssize_t number_of_read_i
 
     if (number_of_read_info == -1)
     {
-        print_custom_error ("check_of_reading_file", EIO);
-        close (file_onegin);
+        print_custom_error("check_of_reading_file", EIO);
+        close(file_onegin);
         return -1;
     }
 
@@ -189,7 +188,7 @@ int check_of_opening_file (FILE* onegin_out) {
 
     if (onegin_out == NULL)
     {
-        print_custom_error ("check_of_opening_file (FILE*)", ENOENT);
+        print_custom_error("check_of_opening_file (FILE*)", ENOENT);
         return -1;
     }
 
@@ -201,7 +200,7 @@ int write_pointers_to_strings_in_index (info_for_working_with_file* file_info, s
     file_info->index = (string_info*)calloc(memory_for_index + 1, sizeof(string_info));
     check_of_memory_allocation_index (file_info->index);
 
-    file_info->number_of_strings = put_pointers_to_strings_in_index (file_info->buffer, file_info->index, file_info->number_of_read_info);
+    file_info->number_of_strings = put_pointers_to_strings_in_index(file_info->buffer, file_info->index, file_info->number_of_read_info);
 
     return 0;
 }
@@ -210,7 +209,7 @@ int check_of_memory_allocation_index (string_info* index) {
 
     if (index == NULL)
     {
-        print_custom_error ("check_of_memory_allocation_index", ENOMEM);
+        print_custom_error("check_of_memory_allocation_index", ENOMEM);
         return -1;
     }
 
@@ -228,22 +227,22 @@ void quick_sort (void* data, size_t size_of_data, size_t size_of_data_element, i
 
     for (size_t j = 0; j < max_arr_index; j++)
     {
-        if (compare_func ((void*)((uintptr_t)data + j * size_of_data_element),
+        if (compare_func((void*)((uintptr_t)data + j * size_of_data_element),
                          (void*)((uintptr_t)data + max_arr_index * size_of_data_element)) < 0)
         {
-            swap ((void*)((uintptr_t)data + j * size_of_data_element),
+            swap((void*)((uintptr_t)data + j * size_of_data_element),
                  (void*)((uintptr_t)data + i * size_of_data_element),
                  size_of_data_element);
             i++;
         }
     }
 
-    swap ((void*)((uintptr_t)data + i * size_of_data_element),
+    swap((void*)((uintptr_t)data + i * size_of_data_element),
          (void*)((uintptr_t)data + max_arr_index * size_of_data_element),
          size_of_data_element);
 
-    quick_sort (data, i, size_of_data_element, compare_func);
-    quick_sort ((void*)((uintptr_t)data + (i + 1) * size_of_data_element), size_of_data - i - 1, size_of_data_element, compare_func);
+    quick_sort(data, i, size_of_data_element, compare_func);
+    quick_sort((void*)((uintptr_t)data + (i + 1) * size_of_data_element), size_of_data - i - 1, size_of_data_element, compare_func);
 }
 
 int compare_alphabet_order (const void* first_string, const void* second_string) {
