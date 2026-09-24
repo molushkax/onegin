@@ -101,7 +101,7 @@ size_t work_with_buffer_for_text (info_for_working_with_file* file_info) {
 
     get_size_of_file (onegin, &(file_info->bytes_for_onegin));
 
-    file_info->file_onegin = open(onegin, O_RDONLY);
+    file_info->file_onegin = open (onegin, O_RDONLY);
     check_of_opening_file (file_info->file_onegin);
 
     file_info->buffer = (char*)malloc(file_info->bytes_for_onegin + 1);
@@ -109,7 +109,7 @@ size_t work_with_buffer_for_text (info_for_working_with_file* file_info) {
 
     file_info->number_of_read_info = read_file (file_info->file_onegin, &(file_info->buffer), (int)(file_info->bytes_for_onegin));
 
-    size_t number_of_strings = strings_number(file_info->buffer, file_info->number_of_read_info);
+    size_t number_of_strings = strings_number (file_info->buffer, file_info->number_of_read_info);
 
     return number_of_strings;
 }
@@ -121,15 +121,15 @@ int get_size_of_file (const char* onegin, size_t* bytes_for_onegin) {
 
     struct stat file_stat = {};
 
-    if (stat(onegin, &file_stat) == 0) {
+    if (stat (onegin, &file_stat) == 0) {
         *bytes_for_onegin = file_stat.st_size;
-        printf("\nNumber of bytes for onegin: %zu\n\n", *bytes_for_onegin);
+        printf ("\nNumber of bytes for onegin: %zu\n\n", *bytes_for_onegin);
         return 0;
     }
 
     else
     {
-        print_custom_error("get_size_of_file", ENOENT);
+        print_custom_error ("get_size_of_file", ENOENT);
         return -1;
     }
 }
@@ -147,7 +147,7 @@ int check_of_memory_allocation (const char* buffer) {
 
     if (buffer == NULL)
     {
-        print_custom_error("check_of_memory_allocation", ENOMEM);
+        print_custom_error ("check_of_memory_allocation", ENOMEM);
         return -1;
     }
 
@@ -158,13 +158,13 @@ int check_of_opening_file (const int file_onegin) {
 
     if (file_onegin == -1)
     {
-        print_custom_error("check_of_opening_file (fd)", ENOENT);
+        print_custom_error ("check_of_opening_file (fd)", ENOENT);
         return -1;
     }
 
     else
     {
-        printf("Descriptor of onegin: %d\n\n", file_onegin);
+        printf ("Descriptor of onegin: %d\n\n", file_onegin);
         return 0;
     }
 }
@@ -228,11 +228,11 @@ void quick_sort (void* data, size_t size_of_data, size_t size_of_data_element, i
 
     for (size_t j = 0; j < max_arr_index; j++)
     {
-        if (compare_func ((void*)((uintptr_t)data + j * size_of_data_element),
-                         (void*)((uintptr_t)data + max_arr_index * size_of_data_element)) < 0)
+        if (compare_func ((void*)((uintptr_t)data +             j * size_of_data_element),
+                          (void*)((uintptr_t)data + max_arr_index * size_of_data_element)) < 0)
         {
             swap ((void*)((uintptr_t)data + j * size_of_data_element),
-                 (void*)((uintptr_t)data + i * size_of_data_element),
+                  (void*)((uintptr_t)data + i * size_of_data_element),
                  size_of_data_element);
             i++;
         }
@@ -276,7 +276,7 @@ int compare_alphabet_order_reverse (const void* first_string, const void* second
     assert(first_string  != NULL);
     assert(second_string != NULL);
 
-    return my_strcmp_for_onegin_reverse((const string_info*)first_string, (const string_info*)second_string);
+    return my_strcmp_for_onegin_reverse ((const string_info*)first_string, (const string_info*)second_string);
 }
 
 size_t put_pointers_to_strings_in_index (char* buffer, string_info* index, size_t bytes_for_onegin) {
@@ -336,7 +336,7 @@ int compare_from_min_to_max (const void* value_a, const void* value_b) {
     const char* a = ((const string_info*)value_a)->start_ptr;
     const char* b = ((const string_info*)value_b)->start_ptr;
 
-    return (a > b) - (a < b);
+    return int(a - b);
 }
 
 void print_custom_error (const char* function_name, int error_code) {
@@ -360,7 +360,7 @@ void print_custom_error (const char* function_name, int error_code) {
         }
     }
 
-    fprintf(stderr, "In function <<%s>> error %d: %s\n", function_name, error_code, message);
+    fprintf (stderr, "ERROR %s in function <<%s>> %d\n", message, function_name, error_code);
 }
 
 //------- My library -------
@@ -503,8 +503,8 @@ int my_strcmp_for_onegin (const char* first_string, const char* second_string) {
     int i = 0, j = 0;
     while (first_string != NULL && second_string != NULL)
     {
-        skip_not_alpha(first_string, &i);
-        skip_not_alpha(second_string, &j);
+        skip_not_alpha (first_string, &i);
+        skip_not_alpha (second_string, &j);
 
         if (first_string[i]  == '\0' && second_string[j] == '\0')
             return 0;
@@ -549,8 +549,8 @@ int my_strcmp_for_onegin_reverse (const string_info* first_string, const string_
 
     while (str1 != NULL && str2 != NULL)
     {
-        skip_not_alpha_reverse(str1, &first_len);
-        skip_not_alpha_reverse(str2, &second_len);
+        skip_not_alpha_reverse (str1, &first_len);
+        skip_not_alpha_reverse (str2, &second_len);
 
         if (first_len  < 0 && second_len < 0)
             return 0;
