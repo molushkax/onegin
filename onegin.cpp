@@ -10,6 +10,8 @@
 #include <sys/stat.h>
 #include <locale.h>
 
+// онегин по файлам документация сипи 1251 бред
+
 #define NO_COLOR "\033[0m"
 #define RED      "\033[1;31m"
 
@@ -69,14 +71,12 @@ int    my_strcmp_for_onegin_reverse (const string_info* first_string, const stri
 int    skip_not_alpha (const char* string, int* i);
 int    skip_not_alpha_reverse (const char* string, int* len);
 bool   isalpha_rus (unsigned char alpha);
+unsigned char tolower_rus (unsigned char c);
 int    free_alloc_plus_ptr (string_info* index, char* buffer, size_t bytes_for_onegin, size_t number_of_strings);
 
 //--------------------------------------------------------------------------------------------------------------------------------------
 
 int main () {
-
-    setlocale(LC_ALL, "Russian");
-    printf("Привет, МФТИ!\n");
 
     struct info_for_working_with_file file_info = {};
 
@@ -296,7 +296,9 @@ void print_results_of_sorting_in_file (string_info* index, size_t lines_to_read,
     fprintf (onegin_out, "\n%s \n\n", type_of_sorting);
     for (size_t i = 0; i < lines_to_read; i++)
     {
-        if (index[i].start_ptr != NULL && index[i].start_ptr[0] != '\0' && index[i].start_ptr[0] != '\n' && index[i].start_ptr[0] != '\t')
+        if (index[i].start_ptr != NULL && index[i].start_ptr[0] != '\0' &&
+        !(index[i].start_ptr[6] == ' ' && index[i].start_ptr[3] == ' ' && index[i].start_ptr[8] == ' '  && index[i].start_ptr[10] == ' ')
+        && index[i].length > 5)
         {
             fprintf(onegin_out, "%s\n", index[i].start_ptr);
         }
@@ -503,6 +505,13 @@ int swap (void* first_element, void* second_element, size_t size_of_value) {
     return 0;
 }
 
+unsigned char tolower_rus (unsigned char c) {
+
+    if (c >= 0xC0 && c <= 0xDF) return c + 0x20;
+    if (c == 0xA8) return 0xB8;
+    return c;
+}
+
 int my_strcmp_for_onegin (const char* first_string, const char* second_string) {
 
     assert(first_string  != NULL);
@@ -521,7 +530,7 @@ int my_strcmp_for_onegin (const char* first_string, const char* second_string) {
         if (second_string[j] == '\0')
             return 1;
 
-        int difference = tolower((unsigned char)first_string[i]) - tolower((unsigned char)second_string[j]);
+        int difference = tolower_rus((unsigned char)first_string[i]) - tolower_rus((unsigned char)second_string[j]);
         if (difference != 0)
             return difference;
 
@@ -574,7 +583,7 @@ int my_strcmp_for_onegin_reverse (const string_info* first_string, const string_
         if (second_len < 0)
             return 1;
 
-        int difference  = tolower((unsigned char)str1[first_len]) - tolower((unsigned char)str2[second_len]);
+        int difference  = tolower_rus((unsigned char)str1[first_len]) - tolower_rus((unsigned char)str2[second_len]);
         if (difference != 0)
             return difference;
 
@@ -589,7 +598,7 @@ int skip_not_alpha_reverse (const char* string, int* len) {
     assert (string != NULL);
     assert (len    != NULL);
 
-    while (*len >= 0 && !isalpha((unsigned char)string[*len]))
+    while (*len >= 0 && !isalpha((unsigned char)string[*len]) && !isalpha_rus((unsigned char)string[*len]))
     {
         (*len)--;
     }
@@ -610,5 +619,3 @@ int free_alloc_plus_ptr (string_info* index, char* buffer, size_t bytes_for_oneg
 
     return 0;
 }
-
-//----------------------------------------------------------------------------------------------------------------------------------------
