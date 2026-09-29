@@ -8,21 +8,29 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <locale.h>
+
+#define NO_COLOR "\033[0m"
+#define RED      "\033[1;31m"
 
 struct error_map {
-
-    int error_code;
+    int         error_code;
     const char* error_message;
 };
 
-struct string_info {
+const struct error_map errors[] = {
+    {ENOMEM, "Memory allocation failed"},
+    {EACCES, "Permission denied"},
+    {ENOENT, "File not found"},
+    {EIO,    "Input/output error"}
+};
 
+struct string_info {
     char*  start_ptr;
     size_t length;
 };
 
 struct info_for_working_with_file {
-
     int           file_onegin;
     char*         buffer;
     size_t        bytes_for_onegin;
@@ -33,23 +41,23 @@ struct info_for_working_with_file {
 
 //--------------------------------------------------------------------------------------------------------------------------------------
 
-size_t work_with_buffer_for_text (info_for_working_with_file* file_info);
-int    get_size_of_file (const char* onegin, size_t* bytes_for_onegin);
-int    read_file (int file_onegin, char** buffer, int bytes_for_onegin);
-int    check_of_memory_allocation (const char* buffer);
-int    check_of_opening_file (const int file_onegin);
-int    check_of_reading_file (const int file_onegin, const ssize_t number_of_read_info);
-int    check_of_memory_allocation_index (string_info* index);
-int    check_of_opening_file (FILE* onegin_out);
+void   print_custom_error (int error_code, const char* function_name, int line);
+size_t work_with_buffer_for_text (info_for_working_with_file* file_info, const char* caller);
+int    get_size_of_file (const char* onegin, size_t* bytes_for_onegin, const char* caller);
+int    read_file (int file_onegin, char** buffer, int bytes_for_onegin, const char* caller);
+int    check_of_memory_allocation (const char* buffer, const char* caller);
+int    check_of_opening_file (const int file_onegin, const char* caller);
+int    check_of_reading_file (const int file_onegin, const ssize_t number_of_read_info, const char* caller);
+int    check_of_memory_allocation_index (string_info* index, const char* caller);
+int    check_of_opening_file (FILE* onegin_out, const char* caller);
 size_t strings_number (char* buffer, size_t bytes);
-int    write_pointers_to_strings_in_index (info_for_working_with_file* file_info, size_t memory_for_index);
+int    write_pointers_to_strings_in_index (info_for_working_with_file* file_info, size_t memory_for_index, const char* caller);
 void   quick_sort (void* data, size_t size_of_data, size_t size_of_data_element, int (*compare_func)(const void*, const void*));
 int    compare_alphabet_order (const void* value_a, const void* value_b);
 void   print_results_of_sorting_in_file (string_info* index, size_t lines_to_read, FILE* onegin_out, const char* type_of_sorting);
 int    compare_alphabet_order_reverse (const void* value_a, const void* value_b);
 size_t put_pointers_to_strings_in_index (char* buffer, string_info* index, size_t bytes_for_onegin);
 int    compare_from_min_to_max (const void* value_a, const void* value_b);
-void   print_custom_error (const char* function_name, int error_code);
 
 //------------ My library -------------
 char*  my_strdup (const char* string);
@@ -60,19 +68,23 @@ int    my_strcmp_for_onegin (const char* first_string, const char* second_string
 int    my_strcmp_for_onegin_reverse (const string_info* first_string, const string_info* second_string);
 int    skip_not_alpha (const char* string, int* i);
 int    skip_not_alpha_reverse (const char* string, int* len);
+bool   isalpha_rus (unsigned char alpha);
 int    free_alloc_plus_ptr (string_info* index, char* buffer, size_t bytes_for_onegin, size_t number_of_strings);
 
 //--------------------------------------------------------------------------------------------------------------------------------------
 
 int main () {
 
+    setlocale(LC_ALL, "Russian");
+    printf("œË‚ÂÚ, Ã‘“»!\n");
+
     struct info_for_working_with_file file_info = {};
 
-    size_t memory_for_index = work_with_buffer_for_text (&file_info);
-    write_pointers_to_strings_in_index (&file_info, memory_for_index);
+    size_t memory_for_index = work_with_buffer_for_text (&file_info, __FUNCTION__);
+    write_pointers_to_strings_in_index (&file_info, memory_for_index, __FUNCTION__);
 
     FILE* onegin_out = fopen("onegin_out.txt", "w");
-    check_of_opening_file (onegin_out);
+    check_of_opening_file (onegin_out, __FUNCTION__);
 
     qsort (file_info.index, file_info.number_of_strings, sizeof(string_info), compare_alphabet_order);
     print_results_of_sorting_in_file(file_info.index, file_info.number_of_strings, onegin_out, "Alphabet sorting:");
@@ -93,28 +105,48 @@ int main () {
 
 //-------------------------------------------------------------------------------------------------------------------------------------
 
-size_t work_with_buffer_for_text (info_for_working_with_file* file_info) {
+void print_custom_error (int error_code, const char* function_name, int line) {
+
+    const char* message = "Error";
+    size_t number_of_errors = sizeof(errors) / sizeof(errors[0]);
+
+    for (size_t i = 0; i < number_of_errors; i++)
+    {
+        if (errors[i].error_code == error_code)
+        {
+            message = errors[i].error_message;
+            break;
+        }
+    }
+
+    fprintf (stderr, RED "ERROR %d %s in function <<%s>> in line %d\n" NO_COLOR,
+             error_code, message, function_name, line);
+}
+
+//-------------------------------------------------------------------------------------------------------------------------------------
+
+size_t work_with_buffer_for_text (info_for_working_with_file* file_info, const char* caller) {
 
     assert(file_info != NULL);
 
-    const char* onegin = "onegin.txt";
+    const char* onegin = "onegin_rus.txt";
 
-    get_size_of_file (onegin, &(file_info->bytes_for_onegin));
+    get_size_of_file (onegin, &(file_info->bytes_for_onegin), caller);
 
     file_info->file_onegin = open (onegin, O_RDONLY);
-    check_of_opening_file (file_info->file_onegin);
+    check_of_opening_file (file_info->file_onegin, caller);
 
     file_info->buffer = (char*)malloc(file_info->bytes_for_onegin + 1);
-    check_of_memory_allocation (file_info->buffer);
+    check_of_memory_allocation (file_info->buffer, caller);
 
-    file_info->number_of_read_info = read_file (file_info->file_onegin, &(file_info->buffer), (int)(file_info->bytes_for_onegin));
+    file_info->number_of_read_info = read_file (file_info->file_onegin, &(file_info->buffer), (int)(file_info->bytes_for_onegin), caller);
 
     size_t number_of_strings = strings_number (file_info->buffer, file_info->number_of_read_info);
 
     return number_of_strings;
 }
 
-int get_size_of_file (const char* onegin, size_t* bytes_for_onegin) {
+int get_size_of_file (const char* onegin, size_t* bytes_for_onegin, const char* caller) {
 
     assert(onegin != NULL);
     assert(bytes_for_onegin != NULL);
@@ -129,36 +161,36 @@ int get_size_of_file (const char* onegin, size_t* bytes_for_onegin) {
 
     else
     {
-        print_custom_error ("get_size_of_file", ENOENT);
+        print_custom_error (ENOENT, caller, __LINE__);
         return -1;
     }
 }
 
-int read_file (int file_onegin, char** buffer, int bytes_for_onegin) {
+int read_file (int file_onegin, char** buffer, int bytes_for_onegin, const char* caller) {
 
     ssize_t read_info = read (file_onegin, *buffer, (int)bytes_for_onegin);
-    check_of_reading_file (file_onegin, read_info);
+    check_of_reading_file (file_onegin, read_info, caller);
     (*buffer)[read_info] = '\0';
 
     return (int)read_info;
 }
 
-int check_of_memory_allocation (const char* buffer) {
+int check_of_memory_allocation (const char* buffer, const char* caller) {
 
     if (buffer == NULL)
     {
-        print_custom_error ("check_of_memory_allocation", ENOMEM);
+        print_custom_error(ENOMEM, caller, __LINE__);
         return -1;
     }
 
     else return 0;
 }
 
-int check_of_opening_file (const int file_onegin) {
+int check_of_opening_file (const int file_onegin, const char* caller) {
 
     if (file_onegin == -1)
     {
-        print_custom_error ("check_of_opening_file (fd)", ENOENT);
+        print_custom_error(ENOENT, caller, __LINE__);
         return -1;
     }
 
@@ -169,11 +201,11 @@ int check_of_opening_file (const int file_onegin) {
     }
 }
 
-int check_of_reading_file (const int file_onegin, const ssize_t number_of_read_info) {
+int check_of_reading_file (const int file_onegin, const ssize_t number_of_read_info, const char* caller) {
 
     if (number_of_read_info == -1)
     {
-        print_custom_error ("check_of_reading_file", EIO);
+        print_custom_error(EIO, caller, __LINE__);
         close (file_onegin);
         return -1;
     }
@@ -185,32 +217,32 @@ int check_of_reading_file (const int file_onegin, const ssize_t number_of_read_i
     }
 }
 
-int check_of_opening_file (FILE* onegin_out) {
+int check_of_opening_file (FILE* onegin_out, const char* caller) {
 
     if (onegin_out == NULL)
     {
-        print_custom_error ("check_of_opening_file (FILE*)", ENOENT);
+        print_custom_error(ENOENT, caller, __LINE__);
         return -1;
     }
 
     else return 0;
 }
 
-int write_pointers_to_strings_in_index (info_for_working_with_file* file_info, size_t memory_for_index) {
+int write_pointers_to_strings_in_index (info_for_working_with_file* file_info, size_t memory_for_index, const char* caller) {
 
     file_info->index = (string_info*)calloc(memory_for_index + 1, sizeof(string_info));
-    check_of_memory_allocation_index (file_info->index);
+    check_of_memory_allocation_index (file_info->index, caller);
 
     file_info->number_of_strings = put_pointers_to_strings_in_index (file_info->buffer, file_info->index, file_info->number_of_read_info);
 
     return 0;
 }
 
-int check_of_memory_allocation_index (string_info* index) {
+int check_of_memory_allocation_index (string_info* index, const char* caller) {
 
     if (index == NULL)
     {
-        print_custom_error ("check_of_memory_allocation_index", ENOMEM);
+        print_custom_error(ENOMEM, caller, __LINE__);
         return -1;
     }
 
@@ -238,11 +270,11 @@ void quick_sort (void* data, size_t size_of_data, size_t size_of_data_element, i
         }
     }
 
-    swap ((void*)((uintptr_t)data + i * size_of_data_element),
-         (void*)((uintptr_t)data + max_arr_index * size_of_data_element),
+    swap ((void*)((uintptr_t)data +             i * size_of_data_element),
+          (void*)((uintptr_t)data + max_arr_index * size_of_data_element),
          size_of_data_element);
 
-    quick_sort (data, i, size_of_data_element, compare_func);
+    quick_sort (data,                                                                         i, size_of_data_element, compare_func);
     quick_sort ((void*)((uintptr_t)data + (i + 1) * size_of_data_element), size_of_data - i - 1, size_of_data_element, compare_func);
 }
 
@@ -264,7 +296,7 @@ void print_results_of_sorting_in_file (string_info* index, size_t lines_to_read,
     fprintf (onegin_out, "\n%s \n\n", type_of_sorting);
     for (size_t i = 0; i < lines_to_read; i++)
     {
-        if (index[i].start_ptr != NULL && index[i].start_ptr[0] != '\0' && index[i].start_ptr[0] != '\n')
+        if (index[i].start_ptr != NULL && index[i].start_ptr[0] != '\0' && index[i].start_ptr[0] != '\n' && index[i].start_ptr[0] != '\t')
         {
             fprintf(onegin_out, "%s\n", index[i].start_ptr);
         }
@@ -299,7 +331,7 @@ size_t put_pointers_to_strings_in_index (char* buffer, string_info* index, size_
 
             if (i + 1 < bytes_for_onegin)
             {
-                index[j].start_ptr  = &buffer[i] + 1;
+                index[j].start_ptr = &buffer[i] + 1;
                 index[j].length = 0;
                 j++;
             }
@@ -339,30 +371,6 @@ int compare_from_min_to_max (const void* value_a, const void* value_b) {
     return int(a - b);
 }
 
-void print_custom_error (const char* function_name, int error_code) {
-
-    const struct error_map errors[] =   {
-                                            {ENOMEM, "Memory allocation failed"},
-                                            {EACCES, "Permission denied"},
-                                            {ENOENT, "File not found"},
-                                            {EIO,    "Input/output error"}
-                                        };
-
-    const char* message = "Error";
-    size_t number_of_errors = sizeof(errors) / sizeof(errors[0]);
-
-    for (size_t i = 0; i < number_of_errors; i++)
-    {
-        if (errors[i].error_code == error_code)
-        {
-            message = errors[i].error_message;
-            break;
-        }
-    }
-
-    fprintf (stderr, "ERROR %s in function <<%s>> %d\n", message, function_name, error_code);
-}
-
 //------- My library -------
 
 char* my_strdup (const char* string) {
@@ -392,13 +400,13 @@ void* my_memcpy (void* where, const void* from, size_t n) {
     }
 
     unsigned char* where_ptr = (unsigned char*)where;
-    unsigned char* from_ptr = (unsigned char*)from;
+    unsigned char* from_ptr  = (unsigned char*)from;
 
     while (n >= sizeof(uint64_t))
     {
         *(uint64_t*)where_ptr = *(const uint64_t*)from_ptr;
         where_ptr += sizeof(uint64_t);
-        from_ptr += sizeof(uint64_t);
+        from_ptr  += sizeof(uint64_t);
         n -= sizeof(uint64_t);
     }
 
@@ -406,7 +414,7 @@ void* my_memcpy (void* where, const void* from, size_t n) {
     {
         *(uint32_t*)where_ptr = *(const uint32_t*)from_ptr;
         where_ptr += sizeof(uint32_t);
-        from_ptr += sizeof(uint32_t);
+        from_ptr  += sizeof(uint32_t);
         n -= sizeof(uint32_t);
     }
 
@@ -414,7 +422,7 @@ void* my_memcpy (void* where, const void* from, size_t n) {
     {
         *(uint16_t*)where_ptr = *(const uint16_t*)from_ptr;
         where_ptr += sizeof(uint16_t);
-        from_ptr += sizeof(uint16_t);
+        from_ptr  += sizeof(uint16_t);
         n -= sizeof(uint16_t);
     }
 
@@ -528,12 +536,19 @@ int skip_not_alpha (const char* string, int* i) {
     assert (string != NULL);
     assert (i != NULL);
 
-    while (string[*i] != '\0' && !isalpha((unsigned char)string[*i]))
+    while (string[*i] != '\0' && !isalpha((unsigned char)string[*i]) && !isalpha_rus ((unsigned char)string[*i]))
     {
         (*i)++;
     }
 
     return 0;
+}
+
+bool isalpha_rus (unsigned char alpha) {
+
+    if (alpha >= 192 || alpha == 168 || alpha == 184) return true;
+    else return false;
+
 }
 
 int my_strcmp_for_onegin_reverse (const string_info* first_string, const string_info* second_string) {
