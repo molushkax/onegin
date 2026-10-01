@@ -10,15 +10,7 @@
 #include <sys/stat.h>
 #include <locale.h>
 
-// онегин по файлам документация сипи 1251 бред
-
-#define NO_COLOR "\033[0m"
-#define RED      "\033[1;31m"
-
-struct error_map {
-    int         error_code;
-    const char* error_message;
-};
+#include "onegin.h"
 
 const struct error_map errors[] = {
     {ENOMEM, "Memory allocation failed"},
@@ -26,84 +18,6 @@ const struct error_map errors[] = {
     {ENOENT, "File not found"},
     {EIO,    "Input/output error"}
 };
-
-struct string_info {
-    char*  start_ptr;
-    size_t length;
-};
-
-struct info_for_working_with_file {
-    int           file_onegin;
-    char*         buffer;
-    size_t        bytes_for_onegin;
-    ssize_t       number_of_read_info;
-    string_info*  index;
-    size_t        number_of_strings;
-};
-
-//--------------------------------------------------------------------------------------------------------------------------------------
-
-void   print_custom_error (int error_code, const char* function_name, int line);
-size_t work_with_buffer_for_text (info_for_working_with_file* file_info, const char* caller);
-int    get_size_of_file (const char* onegin, size_t* bytes_for_onegin, const char* caller);
-int    read_file (int file_onegin, char** buffer, int bytes_for_onegin, const char* caller);
-int    check_of_memory_allocation (const char* buffer, const char* caller);
-int    check_of_opening_file (const int file_onegin, const char* caller);
-int    check_of_reading_file (const int file_onegin, const ssize_t number_of_read_info, const char* caller);
-int    check_of_memory_allocation_index (string_info* index, const char* caller);
-int    check_of_opening_file (FILE* onegin_out, const char* caller);
-size_t strings_number (char* buffer, size_t bytes);
-int    write_pointers_to_strings_in_index (info_for_working_with_file* file_info, size_t memory_for_index, const char* caller);
-void   quick_sort (void* data, size_t size_of_data, size_t size_of_data_element, int (*compare_func)(const void*, const void*));
-int    compare_alphabet_order (const void* value_a, const void* value_b);
-void   print_results_of_sorting_in_file (string_info* index, size_t lines_to_read, FILE* onegin_out, const char* type_of_sorting);
-int    compare_alphabet_order_reverse (const void* value_a, const void* value_b);
-size_t put_pointers_to_strings_in_index (char* buffer, string_info* index, size_t bytes_for_onegin);
-int    compare_from_min_to_max (const void* value_a, const void* value_b);
-
-//------------ My library -------------
-char*  my_strdup (const char* string);
-void*  my_memcpy (void* where, const void* from, size_t n);
-size_t my_strlen (const char* string);
-int    swap (void* first_element, void* second_element, size_t size_of_value);
-int    my_strcmp_for_onegin (const char* first_string, const char* second_string);
-int    my_strcmp_for_onegin_reverse (const string_info* first_string, const string_info* second_string);
-int    skip_not_alpha (const char* string, int* i);
-int    skip_not_alpha_reverse (const char* string, int* len);
-bool   isalpha_rus (unsigned char alpha);
-unsigned char tolower_rus (unsigned char c);
-int    free_alloc_plus_ptr (string_info* index, char* buffer, size_t bytes_for_onegin, size_t number_of_strings);
-
-//--------------------------------------------------------------------------------------------------------------------------------------
-
-int main () {
-
-    struct info_for_working_with_file file_info = {};
-
-    size_t memory_for_index = work_with_buffer_for_text (&file_info, __FUNCTION__);
-    write_pointers_to_strings_in_index (&file_info, memory_for_index, __FUNCTION__);
-
-    FILE* onegin_out = fopen("onegin_out.txt", "w");
-    check_of_opening_file (onegin_out, __FUNCTION__);
-
-    qsort (file_info.index, file_info.number_of_strings, sizeof(string_info), compare_alphabet_order);
-    print_results_of_sorting_in_file(file_info.index, file_info.number_of_strings, onegin_out, "Alphabet sorting:");
-
-    quick_sort (file_info.index, file_info.number_of_strings, sizeof(string_info), compare_alphabet_order_reverse);
-    print_results_of_sorting_in_file(file_info.index, file_info.number_of_strings, onegin_out, "Alphabet reverse sorting:");
-
-    qsort (file_info.index, file_info.number_of_strings, sizeof(string_info), compare_from_min_to_max);
-    print_results_of_sorting_in_file(file_info.index, file_info.number_of_strings, onegin_out, "Original Onegin:");
-
-    free_alloc_plus_ptr (file_info.index, file_info.buffer, file_info.bytes_for_onegin, file_info.number_of_strings);
-    close (file_info.file_onegin);
-    fclose (onegin_out);
-
-    printf("Check file onegin_out.txt\n\n");
-    return 0;
-}
-
-//-------------------------------------------------------------------------------------------------------------------------------------
 
 void print_custom_error (int error_code, const char* function_name, int line) {
 
@@ -122,8 +36,6 @@ void print_custom_error (int error_code, const char* function_name, int line) {
     fprintf (stderr, RED "ERROR %d %s in function <<%s>> in line %d\n" NO_COLOR,
              error_code, message, function_name, line);
 }
-
-//-------------------------------------------------------------------------------------------------------------------------------------
 
 size_t work_with_buffer_for_text (info_for_working_with_file* file_info, const char* caller) {
 
@@ -158,7 +70,6 @@ int get_size_of_file (const char* onegin, size_t* bytes_for_onegin, const char* 
         printf ("\nNumber of bytes for onegin: %zu\n\n", *bytes_for_onegin);
         return 0;
     }
-
     else
     {
         print_custom_error (ENOENT, caller, __LINE__);
@@ -182,7 +93,6 @@ int check_of_memory_allocation (const char* buffer, const char* caller) {
         print_custom_error(ENOMEM, caller, __LINE__);
         return -1;
     }
-
     else return 0;
 }
 
@@ -193,7 +103,6 @@ int check_of_opening_file (const int file_onegin, const char* caller) {
         print_custom_error(ENOENT, caller, __LINE__);
         return -1;
     }
-
     else
     {
         printf ("Descriptor of onegin: %d\n\n", file_onegin);
@@ -209,7 +118,6 @@ int check_of_reading_file (const int file_onegin, const ssize_t number_of_read_i
         close (file_onegin);
         return -1;
     }
-
     else
     {
         printf ("Result of read function: %zd\n\n", number_of_read_info);
@@ -224,7 +132,6 @@ int check_of_opening_file (FILE* onegin_out, const char* caller) {
         print_custom_error(ENOENT, caller, __LINE__);
         return -1;
     }
-
     else return 0;
 }
 
@@ -245,47 +152,7 @@ int check_of_memory_allocation_index (string_info* index, const char* caller) {
         print_custom_error(ENOMEM, caller, __LINE__);
         return -1;
     }
-
     else return 0;
-}
-
-void quick_sort (void* data, size_t size_of_data, size_t size_of_data_element, int (*compare_func)(const void*, const void*)) {
-
-    assert(data != NULL);
-
-    if (size_of_data <= 1) return;
-
-    size_t max_arr_index = size_of_data - 1;
-    size_t i = 0;
-
-    for (size_t j = 0; j < max_arr_index; j++)
-    {
-        if (compare_func ((void*)((uintptr_t)data +             j * size_of_data_element),
-                          (void*)((uintptr_t)data + max_arr_index * size_of_data_element)) < 0)
-        {
-            swap ((void*)((uintptr_t)data + j * size_of_data_element),
-                  (void*)((uintptr_t)data + i * size_of_data_element),
-                 size_of_data_element);
-            i++;
-        }
-    }
-
-    swap ((void*)((uintptr_t)data +             i * size_of_data_element),
-          (void*)((uintptr_t)data + max_arr_index * size_of_data_element),
-         size_of_data_element);
-
-    quick_sort (data,                                                                         i, size_of_data_element, compare_func);
-    quick_sort ((void*)((uintptr_t)data + (i + 1) * size_of_data_element), size_of_data - i - 1, size_of_data_element, compare_func);
-}
-
-int compare_alphabet_order (const void* first_string, const void* second_string) {
-
-    assert(first_string != NULL);
-    assert(second_string != NULL);
-
-    const char* str1 = ((const string_info*)first_string)->start_ptr;
-    const char* str2 = ((const string_info*)second_string)->start_ptr;
-    return my_strcmp_for_onegin(str1, str2);
 }
 
 void print_results_of_sorting_in_file (string_info* index, size_t lines_to_read, FILE* onegin_out, const char* type_of_sorting) {
@@ -303,14 +170,6 @@ void print_results_of_sorting_in_file (string_info* index, size_t lines_to_read,
             fprintf(onegin_out, "%s\n", index[i].start_ptr);
         }
     }
-}
-
-int compare_alphabet_order_reverse (const void* first_string, const void* second_string) {
-
-    assert(first_string  != NULL);
-    assert(second_string != NULL);
-
-    return my_strcmp_for_onegin_reverse ((const string_info*)first_string, (const string_info*)second_string);
 }
 
 size_t put_pointers_to_strings_in_index (char* buffer, string_info* index, size_t bytes_for_onegin) {
@@ -360,250 +219,6 @@ size_t strings_number (char* buffer, size_t bytes) {
     }
 
     return num;
-}
-
-int compare_from_min_to_max (const void* value_a, const void* value_b) {
-
-    assert(value_a != NULL);
-    assert(value_b != NULL);
-
-    const char* a = ((const string_info*)value_a)->start_ptr;
-    const char* b = ((const string_info*)value_b)->start_ptr;
-
-    return int(a - b);
-}
-
-//------- My library -------
-
-char* my_strdup (const char* string) {
-
-    assert (string != NULL);
-
-    size_t len_local = my_strlen (string) + 1;
-
-    char* str = (char*)malloc(len_local * sizeof (char));
-
-    if (str != NULL)
-    {
-        return ((char*)my_memcpy ((void*)str, (void*)string, len_local));
-    }
-
-    else
-    {
-        return NULL;
-    }
-}
-
-void* my_memcpy (void* where, const void* from, size_t n) {
-
-    if (where == NULL || from == NULL)
-    {
-        return NULL;
-    }
-
-    unsigned char* where_ptr = (unsigned char*)where;
-    unsigned char* from_ptr  = (unsigned char*)from;
-
-    while (n >= sizeof(uint64_t))
-    {
-        *(uint64_t*)where_ptr = *(const uint64_t*)from_ptr;
-        where_ptr += sizeof(uint64_t);
-        from_ptr  += sizeof(uint64_t);
-        n -= sizeof(uint64_t);
-    }
-
-    if (n >= sizeof(uint32_t))
-    {
-        *(uint32_t*)where_ptr = *(const uint32_t*)from_ptr;
-        where_ptr += sizeof(uint32_t);
-        from_ptr  += sizeof(uint32_t);
-        n -= sizeof(uint32_t);
-    }
-
-    if (n >= sizeof(uint16_t))
-    {
-        *(uint16_t*)where_ptr = *(const uint16_t*)from_ptr;
-        where_ptr += sizeof(uint16_t);
-        from_ptr  += sizeof(uint16_t);
-        n -= sizeof(uint16_t);
-    }
-
-    while (n > 0)
-    {
-        *where_ptr = *from_ptr;
-        where_ptr++;
-        from_ptr++;
-        n--;
-    }
-
-    return where;
-}
-
-size_t my_strlen (const char* string) {
-
-    assert (string != NULL);
-
-    size_t my_len = 0;
-    while (string[my_len])
-    {
-        my_len++;
-    }
-
-    return my_len;
-}
-
-int swap (void* first_element, void* second_element, size_t size_of_value) {
-
-    if (first_element == NULL || second_element == NULL || size_of_value == 0)
-    {
-        return -1;
-    }
-
-    unsigned char* a_ptr = (unsigned char*)first_element;
-    unsigned char* b_ptr = (unsigned char*)second_element;
-
-    while (size_of_value >= sizeof(uint64_t))
-    {
-        uint64_t temp = *(uint64_t*)a_ptr;
-        *(uint64_t*)a_ptr = *(uint64_t*)b_ptr;
-        *(uint64_t*)b_ptr = temp;
-        a_ptr += sizeof(uint64_t);
-        b_ptr += sizeof(uint64_t);
-        size_of_value -= sizeof(uint64_t);
-    }
-
-    if (size_of_value >= sizeof(uint32_t))
-    {
-        uint32_t temp = *(uint32_t*)a_ptr;
-        *(uint32_t*)a_ptr = *(uint32_t*)b_ptr;
-        *(uint32_t*)b_ptr = temp;
-        a_ptr += sizeof(uint32_t);
-        b_ptr += sizeof(uint32_t);
-        size_of_value -= sizeof(uint32_t);
-    }
-
-    if (size_of_value >= sizeof(uint16_t))
-    {
-        uint16_t temp = *(uint16_t*)a_ptr;
-        *(uint16_t*)a_ptr = *(uint16_t*)b_ptr;
-        *(uint16_t*)b_ptr = temp;
-        a_ptr += sizeof(uint16_t);
-        b_ptr += sizeof(uint16_t);
-        size_of_value -= sizeof(uint16_t);
-    }
-
-    while (size_of_value > 0)
-    {
-        unsigned char temp = *a_ptr;
-        *a_ptr = *b_ptr;
-        *b_ptr = temp;
-        a_ptr++;
-        b_ptr++;
-        size_of_value--;
-    }
-
-    return 0;
-}
-
-unsigned char tolower_rus (unsigned char c) {
-
-    if (c >= 0xC0 && c <= 0xDF) return c + 0x20;
-    if (c == 0xA8) return 0xB8;
-    return c;
-}
-
-int my_strcmp_for_onegin (const char* first_string, const char* second_string) {
-
-    assert(first_string  != NULL);
-    assert(second_string != NULL);
-
-    int i = 0, j = 0;
-    while (first_string != NULL && second_string != NULL)
-    {
-        skip_not_alpha (first_string, &i);
-        skip_not_alpha (second_string, &j);
-
-        if (first_string[i]  == '\0' && second_string[j] == '\0')
-            return 0;
-        if (first_string[i]  == '\0')
-            return -1;
-        if (second_string[j] == '\0')
-            return 1;
-
-        int difference = tolower_rus((unsigned char)first_string[i]) - tolower_rus((unsigned char)second_string[j]);
-        if (difference != 0)
-            return difference;
-
-        i++;
-        j++;
-    }
-    return 0;
-}
-
-int skip_not_alpha (const char* string, int* i) {
-
-    assert (string != NULL);
-    assert (i != NULL);
-
-    while (string[*i] != '\0' && !isalpha((unsigned char)string[*i]) && !isalpha_rus ((unsigned char)string[*i]))
-    {
-        (*i)++;
-    }
-
-    return 0;
-}
-
-bool isalpha_rus (unsigned char alpha) {
-
-    if (alpha >= 192 || alpha == 168 || alpha == 184) return true;
-    else return false;
-
-}
-
-int my_strcmp_for_onegin_reverse (const string_info* first_string, const string_info* second_string) {
-
-    assert(first_string != NULL);
-    assert(second_string != NULL);
-
-    int first_len  = (int)first_string->length  - 1;
-    int second_len = (int)second_string->length - 1;
-
-    const char* str1 = first_string->start_ptr;
-    const char* str2 = second_string->start_ptr;
-
-    while (str1 != NULL && str2 != NULL)
-    {
-        skip_not_alpha_reverse (str1, &first_len);
-        skip_not_alpha_reverse (str2, &second_len);
-
-        if (first_len  < 0 && second_len < 0)
-            return 0;
-        if (first_len  < 0)
-            return -1;
-        if (second_len < 0)
-            return 1;
-
-        int difference  = tolower_rus((unsigned char)str1[first_len]) - tolower_rus((unsigned char)str2[second_len]);
-        if (difference != 0)
-            return difference;
-
-        first_len--;
-        second_len--;
-    }
-    return 0;
-}
-
-int skip_not_alpha_reverse (const char* string, int* len) {
-
-    assert (string != NULL);
-    assert (len    != NULL);
-
-    while (*len >= 0 && !isalpha((unsigned char)string[*len]) && !isalpha_rus((unsigned char)string[*len]))
-    {
-        (*len)--;
-    }
-
-    return 0;
 }
 
 int free_alloc_plus_ptr (string_info* index, char* buffer, size_t bytes_for_onegin, size_t number_of_strings) {
